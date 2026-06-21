@@ -20,10 +20,11 @@
     /* Botões de Sair/Logout e Usuários */
     .btn-logout { background-color: #ff4c4c !important; color: white !important; }
     .btn-user { background-color: #4CAF50 !important; color: white !important; font-size: 20px; }
+    .btn-rank-home { background-color: #ffb74d !important; color: white !important; }
 
-    /* Controles da Home (Tempo e Botão Sair lado a lado) */
-    .header-controls { display: flex; justify-content: center; align-items: center; width: 90%; max-width: 800px; gap: 10px; margin-bottom: 20px; }
-    .header-controls select, .header-controls button { margin: 0; flex: 1; padding: 15px 10px; font-size: 16px; }
+    /* Controles da Home (Tempo, Ranking e Botão Sair lado a lado) */
+    .header-controls { display: flex; justify-content: center; align-items: center; width: 95%; max-width: 850px; gap: 10px; margin-bottom: 20px; }
+    .header-controls select, .header-controls button { margin: 0; flex: 1; padding: 15px 5px; font-size: 15px; border-radius: 10px; }
 
     /* Grid de Categorias */
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: 90%; max-width: 800px; }
@@ -59,7 +60,7 @@
 
     <div style="width: 100%; max-width: 400px; border-top: 1px solid rgba(255,255,255,0.5); padding-top: 20px; display: flex; flex-direction: column; align-items: center;">
       <p style="color: white; font-size: 14px; margin-bottom: 5px;">Acesso Administrativo:</p>
-      <input type="text" id="username" placeholder="Usuário Admin" autocapitalize="none" style="padding: 10px; margin-bottom: 5px;">
+      <input type="text" id="username" placeholder="Usuário Admin (ex: au_costa)" autocapitalize="none" style="padding: 10px; margin-bottom: 5px;">
       <button id="btn-login" style="background-color: #333; color: white; padding: 10px; width: 50%;">Entrar no Painel</button>
     </div>
   </div>
@@ -97,12 +98,12 @@
         <option value="240">4 Minutos</option>
         <option value="300">5 Minutos</option>
       </select>
+      <button id="btn-ver-ranking" class="btn-rank-home">Ver Ranking</button>
       <button id="btn-logout-home" class="btn-logout">Trocar Usuário</button>
     </div>
 
     <div class="grid" id="category-grid">
       </div>
-    <button id="btn-ver-ranking" style="margin-top: 20px;">Ver Ranking</button>
   </div>
 
   <div id="game-screen" class="screen">
@@ -180,9 +181,6 @@
       document.getElementById(screenId).classList.add('active');
     }
 
-    // ==========================================
-    // CARREGAR USUÁRIOS (OCULTANDO O ADMIN)
-    // ==========================================
     async function loadUsersForLogin() {
       const usersRef = ref(db, 'users');
       const snapshot = await get(usersRef);
@@ -193,7 +191,6 @@
         snapshot.forEach(child => {
           const userName = child.key;
           
-          // Oculta o administrador das listas visíveis do jogo
           if (userName !== "au.costa" && userName !== "au_costa") {
             const btn = document.createElement('button');
             btn.innerText = userName;
@@ -225,14 +222,10 @@
     document.getElementById('btn-logout-rank').addEventListener('click', fazerLogout);
     document.getElementById('btn-logout-admin').addEventListener('click', fazerLogout);
 
-    // ==========================================
-    // LOGIN MANUAL EXCLUSIVO PARA O ADMIN
-    // ==========================================
     document.getElementById('btn-login').addEventListener('click', () => {
       const user = document.getElementById('username').value.trim();
       if (!user) return alert("Digite o usuário administrador!");
 
-      // Aceita tanto a versão com ponto quanto com underline
       if (user === "au.costa" || user === "au_costa") {
         currentUser = user;
         showScreen('admin-screen');
@@ -429,7 +422,6 @@
       clearInterval(timerInterval);
       window.removeEventListener('devicemotion', handleMotion);
 
-      // Bloqueia a pontuação do admin caso ele jogue para testar
       if (currentUser !== "au.costa" && currentUser !== "au_costa") {
         const userRef = ref(db, `users/${currentUser}`);
         const snapshot = await get(userRef);
@@ -444,9 +436,7 @@
       showScreen('ranking-screen');
     }
 
-    // ==========================================
-    // CARREGAR RANKING (OCULTANDO O ADMIN)
-    // ==========================================
+    // Eventos do Ranking
     document.getElementById('btn-ver-ranking').addEventListener('click', () => {
       loadRanking();
       showScreen('ranking-screen');
@@ -464,7 +454,6 @@
         
         let usersArray = [];
         snapshot.forEach(child => {
-          // Garante que o admin também não vai roubar espaço no ranking
           if (child.key !== "au.costa" && child.key !== "au_costa") {
             usersArray.push({ nome: child.key, score: child.val().score || 0 });
           }
