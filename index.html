@@ -17,6 +17,14 @@
     input, select, button { padding: 15px; margin: 10px; border-radius: 10px; border: none; font-size: 18px; width: 80%; max-width: 400px; }
     button { background-color: #fff; color: #87CEEB; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     
+    /* Botões de Sair/Logout e Usuários */
+    .btn-logout { background-color: #ff4c4c !important; color: white !important; }
+    .btn-user { background-color: #4CAF50 !important; color: white !important; font-size: 20px; }
+
+    /* Controles da Home (Tempo e Botão Sair lado a lado) */
+    .header-controls { display: flex; justify-content: center; align-items: center; width: 90%; max-width: 800px; gap: 10px; margin-bottom: 20px; }
+    .header-controls select, .header-controls button { margin: 0; flex: 1; padding: 15px 10px; font-size: 16px; }
+
     /* Grid de Categorias */
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: 90%; max-width: 800px; }
     .card { background: white; border-radius: 15px; padding: 10px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; aspect-ratio: 1; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -30,7 +38,7 @@
     .instrucao { position: absolute; bottom: 20px; color: white; font-size: 14px; text-align: center; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; z-index: 10; pointer-events: none; width: 90%; max-width: 400px; line-height: 1.5; }
 
     /* Ranking e Admin */
-    .table-container { background: white; width: 90%; max-width: 600px; border-radius: 15px; padding: 20px; max-height: 60vh; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .table-container { background: white; width: 90%; max-width: 600px; border-radius: 15px; padding: 20px; max-height: 50vh; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 15px; }
     table { width: 100%; text-align: left; border-collapse: collapse; }
     th, td { padding: 12px 10px; border-bottom: 1px solid #eee; }
     th { color: #87CEEB; }
@@ -42,10 +50,18 @@
 </head>
 <body>
 
-  <div id="login-screen" class="screen active">
-    <h1>Quem Eu Sou?</h1>
-    <input type="text" id="username" placeholder="Digite seu usuário" autocapitalize="none">
-    <button id="btn-login">Entrar</button>
+  <div id="login-screen" class="screen active" style="justify-content: flex-start; padding-top: 40px;">
+    <h1>Quem vai jogar?</h1>
+    
+    <div id="user-list" style="display: flex; flex-direction: column; width: 100%; align-items: center; max-height: 50vh; overflow-y: auto; margin-bottom: 20px;">
+      <p style="color: white; font-size: 14px;">Carregando jogadores...</p>
+    </div>
+
+    <div style="width: 100%; max-width: 400px; border-top: 1px solid rgba(255,255,255,0.5); padding-top: 20px; display: flex; flex-direction: column; align-items: center;">
+      <p style="color: white; font-size: 14px; margin-bottom: 5px;">Acesso Administrativo:</p>
+      <input type="text" id="username" placeholder="Usuário Admin" autocapitalize="none" style="padding: 10px; margin-bottom: 5px;">
+      <button id="btn-login" style="background-color: #333; color: white; padding: 10px; width: 50%;">Entrar</button>
+    </div>
   </div>
 
   <div id="admin-screen" class="screen" style="overflow-y: auto; justify-content: flex-start; padding-top: 40px;">
@@ -63,21 +79,27 @@
       <h3>Gerenciar Usuários</h3>
       <input type="text" id="new-user" placeholder="Novo usuário para cadastrar" style="width: 90%;">
       <button id="btn-add-user">Cadastrar Usuário</button>
-      <button id="btn-reset-rank" style="background-color: #ff4c4c; color: white;">Zerar Todo o Ranking</button>
+      <button id="btn-reset-rank" class="btn-logout">Zerar Todo o Ranking</button>
     </div>
 
     <button id="btn-admin-voltar" style="margin-top: 20px;">Ir para o Jogo</button>
+    <button id="btn-logout-admin" class="btn-logout" style="margin-top: 5px;">Sair do Admin</button>
   </div>
 
   <div id="home-screen" class="screen">
     <h1>Escolha a Categoria</h1>
-    <select id="time-select">
-      <option value="60">1 Minuto</option>
-      <option value="120">2 Minutos</option>
-      <option value="180">3 Minutos</option>
-      <option value="240">4 Minutos</option>
-      <option value="300">5 Minutos</option>
-    </select>
+    
+    <div class="header-controls">
+      <select id="time-select">
+        <option value="60">1 Minuto</option>
+        <option value="120">2 Minutos</option>
+        <option value="180">3 Minutos</option>
+        <option value="240">4 Minutos</option>
+        <option value="300">5 Minutos</option>
+      </select>
+      <button id="btn-logout-home" class="btn-logout">Trocar Usuário</button>
+    </div>
+
     <div class="grid" id="category-grid">
       </div>
     <button id="btn-ver-ranking" style="margin-top: 20px;">Ver Ranking</button>
@@ -100,11 +122,11 @@
         <tr><th>Usuário</th><th>Pontuação Total</th></tr>
         </table>
     </div>
-    <button id="btn-voltar-home">Voltar ao Início</button>
+    <button id="btn-voltar-home" style="margin-bottom: 0;">Voltar ao Início</button>
+    <button id="btn-logout-rank" class="btn-logout" style="margin-top: 10px;">Trocar de Usuário</button>
   </div>
 
   <script type="module">
-    // Importações do Firebase Realtime Database
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
@@ -123,7 +145,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Variáveis Globais
     let currentUser = "";
     let currentScore = 0;
     let gameTime = 60;   
@@ -133,7 +154,6 @@
     let isPlaying = false;
     let sensorLocked = false;
 
-    // Categorias Padrão
     const categorias = [
       { id: "profissao", nome: "Profissão", img: "https://cdn-icons-png.flaticon.com/512/3281/3281223.png" },
       { id: "comida", nome: "Comida", img: "https://cdn-icons-png.flaticon.com/512/3480/3480418.png" },
@@ -148,7 +168,6 @@
       { id: "diversos", nome: "Diversos", img: "https://cdn-icons-png.flaticon.com/512/616/616490.png" }
     ];
 
-    // Preenche o Select do Admin
     const adminCatSelect = document.getElementById('admin-category-select');
     categorias.forEach(cat => {
       const opt = document.createElement('option');
@@ -162,24 +181,66 @@
       document.getElementById(screenId).classList.add('active');
     }
 
-    // Login
+    // ==========================================
+    // CARREGAR USUÁRIOS NA TELA DE LOGIN
+    // ==========================================
+    async function loadUsersForLogin() {
+      const usersRef = ref(db, 'users');
+      const snapshot = await get(usersRef);
+      const userList = document.getElementById('user-list');
+      userList.innerHTML = '';
+      
+      if (snapshot.exists()) {
+        snapshot.forEach(child => {
+          const userName = child.key;
+          
+          // Ocultei o "au.costa" da lista de botões para segurança
+          if (userName !== "au.costa") {
+            const btn = document.createElement('button');
+            btn.innerText = userName;
+            btn.className = "btn-user"; 
+            
+            // Quando clica no próprio nome, entra direto no jogo
+            btn.onclick = () => {
+              currentUser = userName;
+              renderCategories();
+              showScreen('home-screen');
+            };
+            userList.appendChild(btn);
+          }
+        });
+      } else {
+        userList.innerHTML = '<p style="color: white; font-size: 14px;">Nenhum usuário cadastrado.</p>';
+      }
+    }
+
+    // Chama a função assim que o app abre
+    loadUsersForLogin();
+
+    // ==========================================
+    // FUNÇÃO DE TROCAR USUÁRIO (LOGOUT)
+    // ==========================================
+    function fazerLogout() {
+      currentUser = "";
+      document.getElementById('username').value = ""; 
+      loadUsersForLogin(); // Atualiza a lista de nomes antes de mostrar
+      showScreen('login-screen');
+    }
+
+    document.getElementById('btn-logout-home').addEventListener('click', fazerLogout);
+    document.getElementById('btn-logout-rank').addEventListener('click', fazerLogout);
+    document.getElementById('btn-logout-admin').addEventListener('click', fazerLogout);
+
+    // Login Manual (Apenas para o Admin)
     document.getElementById('btn-login').addEventListener('click', async () => {
       const user = document.getElementById('username').value.trim();
-      if (!user) return alert("Digite um usuário!");
+      if (!user) return alert("Digite um usuário admin!");
 
       if (user === "au.costa") {
         currentUser = user;
         showScreen('admin-screen');
       } else {
-        const userRef = ref(db, `users/${user}`);
-        const snapshot = await get(userRef);
-        if (snapshot.exists()) {
-          currentUser = user;
-          renderCategories();
-          showScreen('home-screen');
-        } else {
-          alert("Usuário não cadastrado! Peça para au.costa criar seu acesso.");
-        }
+        alert("Acesso restrito. Escolha seu nome na lista acima!");
       }
     });
 
@@ -195,6 +256,7 @@
         set(ref(db, `users/${newUser}`), { score: 0 });
         alert(`Usuário ${newUser} cadastrado com sucesso!`);
         document.getElementById('new-user').value = '';
+        loadUsersForLogin(); // Atualiza a tela de seleção em tempo real
       }
     });
 
@@ -281,7 +343,6 @@
         if (timeLeft <= 0) endGame();
       }, 1000);
 
-      // NOVO: Pedir permissão para Sensor de Movimento (DeviceMotion)
       if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
         document.getElementById('btn-start-sensor').style.display = 'block';
         document.getElementById('btn-start-sensor').onclick = () => {
@@ -310,42 +371,32 @@
       document.getElementById('word-display').innerText = words.pop();
     }
 
-    // ==========================================
-    // NOVA LÓGICA DE MOVIMENTO (GRAVIDADE Z)
-    // ==========================================
+    // Lógica de Movimento (Gravidade Z)
     function handleMotion(event) {
       if (!isPlaying || sensorLocked) return;
 
-      // Lê a força da gravidade batendo na tela do celular
       const z = event.accelerationIncludingGravity?.z;
       
-      // Alguns aparelhos não retornam Z, se for o caso, a pessoa usa o toque na tela
       if (z === null || z === undefined) return;
 
-      // Se Z ficar menor que -6 (A tela está virada para cima / Teto)
       if (z < -6) {
         handleAction(true);  
-      } 
-      // Se Z ficar maior que 6 (A tela está virada para baixo / Chão)
-      else if (z > 6) {
+      } else if (z > 6) {
         handleAction(false); 
       }
     }
 
-    // ==========================================
-    // PLANO B: TOQUE NA TELA (Fallback)
-    // ==========================================
+    // Toque na Tela (Fallback)
     document.getElementById('game-screen').addEventListener('click', (e) => {
       if (!isPlaying || sensorLocked) return;
       
-      // Pega a largura da tela e o lugar onde o usuário clicou
       const screenWidth = window.innerWidth;
       const clickX = e.clientX;
       
       if (clickX > screenWidth / 2) {
-        handleAction(true); // Clicou na Direita = Acertou
+        handleAction(true); 
       } else {
-        handleAction(false); // Clicou na Esquerda = Pulou
+        handleAction(false); 
       }
     });
 
@@ -356,19 +407,16 @@
       
       if (acertou) {
         currentScore++;
-        gameScreen.style.backgroundColor = "#4CAF50"; // Verde
+        gameScreen.style.backgroundColor = "#4CAF50"; 
         
-        // Se acertou, reseta o tempo para o inicial!
         timeLeft = gameTime; 
         document.getElementById('timer-display').innerText = formatTime(timeLeft);
       } else {
-        gameScreen.style.backgroundColor = "#ff4c4c"; // Vermelho
-        // Se pulou, o tempo continua correndo normalmente
+        gameScreen.style.backgroundColor = "#ff4c4c"; 
       }
 
-      // Pausa de 1,2 segundos para a pessoa voltar o celular à posição normal
       setTimeout(() => {
-        gameScreen.style.backgroundColor = "#87CEEB"; // Azul
+        gameScreen.style.backgroundColor = "#87CEEB"; 
         nextWord();
         sensorLocked = false;
       }, 1200); 
@@ -393,7 +441,7 @@
       showScreen('ranking-screen');
     }
 
-    // Ranking
+    // Ranking e Voltar
     document.getElementById('btn-ver-ranking').addEventListener('click', () => {
       loadRanking();
       showScreen('ranking-screen');
