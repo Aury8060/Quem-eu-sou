@@ -111,12 +111,9 @@
     <div id="timer-display">00:00</div>
     <div id="word-display">PREPARANDO...</div>
     <div class="instrucao">
-      TELA PRO TETO = Acerta | TELA PRO CHÃO = Pula<br>
-      Ou toque na tela: Lado Direito (Acerta) | Esquerdo (Pula)
     </div>
-    <button id="btn-start-sensor" style="display:none; position:absolute; top:40%; z-index:20; width: 60%;">Permitir Sensor</button>
+    <button id="btn-start-sensor" style="display:none; position:absolute; top:20%; z-index:20; width: 60%;">Permitir Sensor</button>
   </div>
-
   <div id="ranking-screen" class="screen">
     <h1>Ranking Oficial</h1>
     <div class="table-container">
@@ -376,9 +373,9 @@
       
       if (z === null || z === undefined) return;
 
-      if (z < -6) {
+      if (z < -5) {
         handleAction(true);  
-      } else if (z > 6) {
+      } else if (z > 5) {
         handleAction(false); 
       }
     }
