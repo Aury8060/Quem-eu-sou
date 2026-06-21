@@ -24,10 +24,10 @@
     .card span { font-weight: bold; font-size: 14px; }
 
     /* Tela do Jogo */
-    #game-screen { background-color: #87CEEB; transition: background-color 0.3s; }
-    #word-display { font-size: 8vw; color: white; font-weight: bold; text-align: center; text-transform: uppercase; padding: 0 20px; }
-    #timer-display { position: absolute; top: 20px; right: 20px; font-size: 24px; color: white; font-weight: bold; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; }
-    .instrucao { position: absolute; bottom: 20px; color: white; font-size: 14px; text-align: center; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; }
+    #game-screen { background-color: #87CEEB; transition: background-color 0.3s; position: relative; }
+    #word-display { font-size: 8vw; color: white; font-weight: bold; text-align: center; text-transform: uppercase; padding: 0 20px; z-index: 10; pointer-events: none; }
+    #timer-display { position: absolute; top: 20px; right: 20px; font-size: 24px; color: white; font-weight: bold; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; z-index: 10; pointer-events: none; }
+    .instrucao { position: absolute; bottom: 20px; color: white; font-size: 14px; text-align: center; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; z-index: 10; pointer-events: none; width: 90%; max-width: 400px; line-height: 1.5; }
 
     /* Ranking e Admin */
     .table-container { background: white; width: 90%; max-width: 600px; border-radius: 15px; padding: 20px; max-height: 60vh; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -86,8 +86,11 @@
   <div id="game-screen" class="screen">
     <div id="timer-display">00:00</div>
     <div id="word-display">PREPARANDO...</div>
-    <div class="instrucao">Gire a tela para CIMA (Acertou) | Gire para BAIXO (Pulou)</div>
-    <button id="btn-start-sensor" style="display:none; position:absolute; bottom:80px; width: 60%;">Iniciar Sensor</button>
+    <div class="instrucao">
+      TELA PRO TETO = Acerta | TELA PRO CHÃO = Pula<br>
+      Ou toque na tela: Lado Direito (Acerta) | Esquerdo (Pula)
+    </div>
+    <button id="btn-start-sensor" style="display:none; position:absolute; top:40%; z-index:20; width: 60%;">Permitir Sensor</button>
   </div>
 
   <div id="ranking-screen" class="screen">
@@ -123,8 +126,8 @@
     // Variáveis Globais
     let currentUser = "";
     let currentScore = 0;
-    let gameTime = 60;   // Tempo escolhido no select
-    let timeLeft = 60;   // Tempo cronometrado atual
+    let gameTime = 60;   
+    let timeLeft = 60;   
     let timerInterval;
     let words = [];
     let isPlaying = false;
@@ -145,7 +148,7 @@
       { id: "diversos", nome: "Diversos", img: "https://cdn-icons-png.flaticon.com/512/616/616490.png" }
     ];
 
-    // Preenche o Select do Admin dinamicamente
+    // Preenche o Select do Admin
     const adminCatSelect = document.getElementById('admin-category-select');
     categorias.forEach(cat => {
       const opt = document.createElement('option');
@@ -154,13 +157,12 @@
       adminCatSelect.appendChild(opt);
     });
 
-    // Navegação de Telas
     function showScreen(screenId) {
       document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
       document.getElementById(screenId).classList.add('active');
     }
 
-    // Login e Verificação
+    // Login
     document.getElementById('btn-login').addEventListener('click', async () => {
       const user = document.getElementById('username').value.trim();
       if (!user) return alert("Digite um usuário!");
@@ -181,9 +183,7 @@
       }
     });
 
-    // ==========================================
-    // FUNÇÕES DO ADMINISTRADOR
-    // ==========================================
+    // Funções Admin
     document.getElementById('btn-admin-voltar').addEventListener('click', () => {
       renderCategories();
       showScreen('home-screen');
@@ -213,37 +213,32 @@
       }
     });
 
-    // IMPORTAÇÃO DO ARQUIVO TXT (Sem necessidade de IA)
+    // Importação do TXT
     document.getElementById('btn-import-words').addEventListener('click', () => {
       const fileInput = document.getElementById('word-file');
       const catId = document.getElementById('admin-category-select').value;
       const catNome = document.getElementById('admin-category-select').options[document.getElementById('admin-category-select').selectedIndex].text;
 
-      if (!fileInput.files.length) return alert("Por favor, selecione um arquivo .txt do seu computador.");
+      if (!fileInput.files.length) return alert("Por favor, selecione um arquivo .txt");
       
       const reader = new FileReader();
       reader.onload = async (e) => {
         const text = e.target.result;
-        // Divide o texto por quebras de linha (\n) ou vírgulas
         const rawWords = text.split(/[\n,]+/);
-        // Remove espaços em branco e itens vazios
         const cleanWords = rawWords.map(w => w.trim()).filter(w => w.length > 0);
         
         if (cleanWords.length > 0) {
            await set(ref(db, `words/${catId}`), cleanWords);
-           alert(`Sucesso! ${cleanWords.length} palavras importadas para a categoria "${catNome}".`);
-           fileInput.value = ""; // Limpa o campo
+           alert(`Sucesso! ${cleanWords.length} palavras salvas em "${catNome}".`);
+           fileInput.value = ""; 
         } else {
-           alert("O arquivo parece vazio ou não foi lido corretamente.");
+           alert("Arquivo vazio ou inválido.");
         }
       };
       reader.readAsText(fileInput.files[0]);
     });
 
-
-    // ==========================================
-    // LÓGICA DO JOGO E SENSOR
-    // ==========================================
+    // Renderizar Home
     function renderCategories() {
       const grid = document.getElementById('category-grid');
       grid.innerHTML = '';
@@ -251,27 +246,26 @@
         const div = document.createElement('div');
         div.className = 'card';
         div.innerHTML = `<img src="${cat.img}" alt="${cat.nome}"><span>${cat.nome}</span>`;
-        div.onclick = () => startGame(cat.id); // Passa o ID da categoria
+        div.onclick = () => startGame(cat.id); 
         grid.appendChild(div);
       });
     }
 
+    // Iniciar Jogo
     async function startGame(catId) {
       gameTime = parseInt(document.getElementById('time-select').value);
       currentScore = 0;
       showScreen('game-screen');
       document.getElementById('word-display').innerText = "CARREGANDO...";
       
-      // Busca palavras DIRETAMENTE DO BANCO, sem usar IA
       const wordsRef = ref(db, `words/${catId}`);
       const snapshot = await get(wordsRef);
       
       if (snapshot.exists() && snapshot.val().length > 0) {
         words = snapshot.val();
-        // Embaralha as palavras aleatoriamente
         words = words.sort(() => Math.random() - 0.5); 
       } else {
-        alert("Atenção: Nenhuma palavra foi importada para esta categoria ainda. Peça ao administrador (au.costa) para fazer o upload do TXT!");
+        alert("Nenhuma palavra importada para esta categoria. Peça ao admin para subir o TXT!");
         showScreen('home-screen');
         return;
       }
@@ -279,7 +273,6 @@
       isPlaying = true;
       nextWord();
       
-      // Lógica do Timer
       timeLeft = gameTime;
       document.getElementById('timer-display').innerText = formatTime(timeLeft);
       timerInterval = setInterval(() => {
@@ -288,17 +281,17 @@
         if (timeLeft <= 0) endGame();
       }, 1000);
 
-      // Permissão para Giroscópio
-      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      // NOVO: Pedir permissão para Sensor de Movimento (DeviceMotion)
+      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
         document.getElementById('btn-start-sensor').style.display = 'block';
         document.getElementById('btn-start-sensor').onclick = () => {
-          DeviceOrientationEvent.requestPermission().then(response => {
-            if (response == 'granted') window.addEventListener('deviceorientation', handleOrientation);
+          DeviceMotionEvent.requestPermission().then(response => {
+            if (response == 'granted') window.addEventListener('devicemotion', handleMotion);
           }).catch(console.error);
           document.getElementById('btn-start-sensor').style.display = 'none';
         }
       } else {
-        window.addEventListener('deviceorientation', handleOrientation);
+        window.addEventListener('devicemotion', handleMotion);
       }
     }
 
@@ -310,56 +303,81 @@
 
     function nextWord() {
       if (words.length === 0) {
-        document.getElementById('word-display').innerText = "ACABOU A LISTA!";
+        document.getElementById('word-display').innerText = "FIM DA LISTA!";
         setTimeout(endGame, 2000);
         return;
       }
       document.getElementById('word-display').innerText = words.pop();
     }
 
-    // Leitura do Giroscópio
-    function handleOrientation(event) {
+    // ==========================================
+    // NOVA LÓGICA DE MOVIMENTO (GRAVIDADE Z)
+    // ==========================================
+    function handleMotion(event) {
       if (!isPlaying || sensorLocked) return;
 
-      const tilt = event.beta; 
+      // Lê a força da gravidade batendo na tela do celular
+      const z = event.accelerationIncludingGravity?.z;
+      
+      // Alguns aparelhos não retornam Z, se for o caso, a pessoa usa o toque na tela
+      if (z === null || z === undefined) return;
 
-      if (tilt < -30) {
-        handleAction(true);  // Acertou (Tela pra cima)
-      } else if (tilt > 60) {
-        handleAction(false); // Pulou (Tela pra baixo)
+      // Se Z ficar menor que -6 (A tela está virada para cima / Teto)
+      if (z < -6) {
+        handleAction(true);  
+      } 
+      // Se Z ficar maior que 6 (A tela está virada para baixo / Chão)
+      else if (z > 6) {
+        handleAction(false); 
       }
     }
 
+    // ==========================================
+    // PLANO B: TOQUE NA TELA (Fallback)
+    // ==========================================
+    document.getElementById('game-screen').addEventListener('click', (e) => {
+      if (!isPlaying || sensorLocked) return;
+      
+      // Pega a largura da tela e o lugar onde o usuário clicou
+      const screenWidth = window.innerWidth;
+      const clickX = e.clientX;
+      
+      if (clickX > screenWidth / 2) {
+        handleAction(true); // Clicou na Direita = Acertou
+      } else {
+        handleAction(false); // Clicou na Esquerda = Pulou
+      }
+    });
+
+    // Ação Principal (Acertar ou Pular)
     function handleAction(acertou) {
       sensorLocked = true;
       const gameScreen = document.getElementById('game-screen');
       
       if (acertou) {
         currentScore++;
-        gameScreen.style.backgroundColor = "#4CAF50"; // Tela Verde
+        gameScreen.style.backgroundColor = "#4CAF50"; // Verde
         
-        // NOVA REGRA DO TEMPO: Se acertou, o tempo volta para o tempo inicial!
+        // Se acertou, reseta o tempo para o inicial!
         timeLeft = gameTime; 
         document.getElementById('timer-display').innerText = formatTime(timeLeft);
       } else {
-        gameScreen.style.backgroundColor = "#ff4c4c"; // Tela Vermelha (Pulo)
-        
-        // A regra do tempo de pulo já acontece naturalmente, pois o 'timeLeft' 
-        // não é alterado aqui e o cronômetro lá no setInterval continua correndo!
+        gameScreen.style.backgroundColor = "#ff4c4c"; // Vermelho
+        // Se pulou, o tempo continua correndo normalmente
       }
 
-      // Pausa de 1 segundo para a pessoa voltar o celular para a posição reta
+      // Pausa de 1,2 segundos para a pessoa voltar o celular à posição normal
       setTimeout(() => {
-        gameScreen.style.backgroundColor = "#87CEEB"; 
+        gameScreen.style.backgroundColor = "#87CEEB"; // Azul
         nextWord();
         sensorLocked = false;
-      }, 1000); 
+      }, 1200); 
     }
 
     async function endGame() {
       isPlaying = false;
       clearInterval(timerInterval);
-      window.removeEventListener('deviceorientation', handleOrientation);
+      window.removeEventListener('devicemotion', handleMotion);
 
       if (currentUser !== "au.costa") {
         const userRef = ref(db, `users/${currentUser}`);
@@ -375,9 +393,7 @@
       showScreen('ranking-screen');
     }
 
-    // ==========================================
-    // TELAS GERAIS E SERVICE WORKER
-    // ==========================================
+    // Ranking
     document.getElementById('btn-ver-ranking').addEventListener('click', () => {
       loadRanking();
       showScreen('ranking-screen');
