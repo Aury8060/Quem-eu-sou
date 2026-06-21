@@ -60,7 +60,7 @@
     <div style="width: 100%; max-width: 400px; border-top: 1px solid rgba(255,255,255,0.5); padding-top: 20px; display: flex; flex-direction: column; align-items: center;">
       <p style="color: white; font-size: 14px; margin-bottom: 5px;">Acesso Administrativo:</p>
       <input type="text" id="username" placeholder="Usuário Admin" autocapitalize="none" style="padding: 10px; margin-bottom: 5px;">
-      <button id="btn-login" style="background-color: #333; color: white; padding: 10px; width: 50%;">Entrar</button>
+      <button id="btn-login" style="background-color: #333; color: white; padding: 10px; width: 50%;">Entrar no Painel</button>
     </div>
   </div>
 
@@ -130,7 +130,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-    // Sua Configuração do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBlig3r_GYe6QH4ZpVaYw13TtJSnETdx88",
       authDomain: "trick-house8060.firebaseapp.com",
@@ -182,7 +181,7 @@
     }
 
     // ==========================================
-    // CARREGAR USUÁRIOS NA TELA DE LOGIN
+    // CARREGAR USUÁRIOS (OCULTANDO O ADMIN)
     // ==========================================
     async function loadUsersForLogin() {
       const usersRef = ref(db, 'users');
@@ -194,13 +193,12 @@
         snapshot.forEach(child => {
           const userName = child.key;
           
-          // Ocultei o "au.costa" da lista de botões para segurança
-          if (userName !== "au.costa") {
+          // Oculta o administrador das listas visíveis do jogo
+          if (userName !== "au.costa" && userName !== "au_costa") {
             const btn = document.createElement('button');
             btn.innerText = userName;
             btn.className = "btn-user"; 
             
-            // Quando clica no próprio nome, entra direto no jogo
             btn.onclick = () => {
               currentUser = userName;
               renderCategories();
@@ -214,16 +212,12 @@
       }
     }
 
-    // Chama a função assim que o app abre
     loadUsersForLogin();
 
-    // ==========================================
-    // FUNÇÃO DE TROCAR USUÁRIO (LOGOUT)
-    // ==========================================
     function fazerLogout() {
       currentUser = "";
       document.getElementById('username').value = ""; 
-      loadUsersForLogin(); // Atualiza a lista de nomes antes de mostrar
+      loadUsersForLogin(); 
       showScreen('login-screen');
     }
 
@@ -231,16 +225,20 @@
     document.getElementById('btn-logout-rank').addEventListener('click', fazerLogout);
     document.getElementById('btn-logout-admin').addEventListener('click', fazerLogout);
 
-    // Login Manual (Apenas para o Admin)
-    document.getElementById('btn-login').addEventListener('click', async () => {
+    // ==========================================
+    // LOGIN MANUAL EXCLUSIVO PARA O ADMIN
+    // ==========================================
+    document.getElementById('btn-login').addEventListener('click', () => {
       const user = document.getElementById('username').value.trim();
-      if (!user) return alert("Digite um usuário admin!");
+      if (!user) return alert("Digite o usuário administrador!");
 
-      if (user === "au.costa") {
+      // Aceita tanto a versão com ponto quanto com underline
+      if (user === "au.costa" || user === "au_costa") {
         currentUser = user;
         showScreen('admin-screen');
       } else {
-        alert("Acesso restrito. Escolha seu nome na lista acima!");
+        alert("Acesso restrito. Jogadores devem clicar em seus nomes na lista acima!");
+        document.getElementById('username').value = "";
       }
     });
 
@@ -252,11 +250,16 @@
 
     document.getElementById('btn-add-user').addEventListener('click', () => {
       const newUser = document.getElementById('new-user').value.trim();
+      
+      if (newUser === "au.costa" || newUser === "au_costa") {
+        return alert("Este nome de usuário é reservado para o sistema.");
+      }
+
       if (newUser) {
         set(ref(db, `users/${newUser}`), { score: 0 });
         alert(`Usuário ${newUser} cadastrado com sucesso!`);
         document.getElementById('new-user').value = '';
-        loadUsersForLogin(); // Atualiza a tela de seleção em tempo real
+        loadUsersForLogin(); 
       }
     });
 
@@ -371,7 +374,7 @@
       document.getElementById('word-display').innerText = words.pop();
     }
 
-    // Lógica de Movimento (Gravidade Z)
+    // Lógica de Movimento
     function handleMotion(event) {
       if (!isPlaying || sensorLocked) return;
 
@@ -386,7 +389,7 @@
       }
     }
 
-    // Toque na Tela (Fallback)
+    // Toque na Tela
     document.getElementById('game-screen').addEventListener('click', (e) => {
       if (!isPlaying || sensorLocked) return;
       
@@ -400,7 +403,6 @@
       }
     });
 
-    // Ação Principal (Acertar ou Pular)
     function handleAction(acertou) {
       sensorLocked = true;
       const gameScreen = document.getElementById('game-screen');
@@ -427,7 +429,8 @@
       clearInterval(timerInterval);
       window.removeEventListener('devicemotion', handleMotion);
 
-      if (currentUser !== "au.costa") {
+      // Bloqueia a pontuação do admin caso ele jogue para testar
+      if (currentUser !== "au.costa" && currentUser !== "au_costa") {
         const userRef = ref(db, `users/${currentUser}`);
         const snapshot = await get(userRef);
         let totalScore = currentScore;
@@ -441,7 +444,9 @@
       showScreen('ranking-screen');
     }
 
-    // Ranking e Voltar
+    // ==========================================
+    // CARREGAR RANKING (OCULTANDO O ADMIN)
+    // ==========================================
     document.getElementById('btn-ver-ranking').addEventListener('click', () => {
       loadRanking();
       showScreen('ranking-screen');
@@ -459,7 +464,10 @@
         
         let usersArray = [];
         snapshot.forEach(child => {
-          usersArray.push({ nome: child.key, score: child.val().score || 0 });
+          // Garante que o admin também não vai roubar espaço no ranking
+          if (child.key !== "au.costa" && child.key !== "au_costa") {
+            usersArray.push({ nome: child.key, score: child.val().score || 0 });
+          }
         });
 
         usersArray.sort((a, b) => b.score - a.score);
