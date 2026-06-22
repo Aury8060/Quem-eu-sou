@@ -22,8 +22,9 @@
     .btn-logout { background-color: #ff4c4c !important; color: white !important; }
     .btn-user { background-color: #4CAF50 !important; color: white !important; font-size: 20px; }
     .btn-rank-home { background-color: #ffb74d !important; color: white !important; }
+    .btn-leave-group { background-color: transparent !important; border: 1px solid white !important; color: white !important; font-size: 14px !important; padding: 10px !important; }
 
-    /* Controles da Home (Tempo, Ranking e Botão Sair lado a lado) */
+    /* Controles da Home */
     .header-controls { display: flex; justify-content: center; align-items: center; width: 95%; max-width: 850px; gap: 10px; margin-bottom: 20px; }
     .header-controls select, .header-controls button { margin: 0; flex: 1; padding: 15px 5px; font-size: 15px; border-radius: 10px; }
 
@@ -54,33 +55,42 @@
   <div id="login-screen" class="screen active" style="justify-content: flex-start; padding-top: 40px;">
     <h1>Quem vai jogar?</h1>
     
-    <div id="user-list" style="display: flex; flex-direction: column; width: 100%; align-items: center; max-height: 50vh; overflow-y: auto; margin-bottom: 20px;">
-      <p style="color: white; font-size: 14px;">Carregando jogadores...</p>
+    <div id="user-list" style="display: flex; flex-direction: column; width: 100%; align-items: center; max-height: 40vh; overflow-y: auto;">
+      <p style="color: white; font-size: 14px;">Carregando...</p>
     </div>
+    
+    <button id="btn-leave-group" class="btn-leave-group" style="display: none; margin-bottom: 10px;">Desconectar Aparelho deste Grupo</button>
 
-    <div style="width: 100%; max-width: 400px; border-top: 1px solid rgba(255,255,255,0.5); padding-top: 20px; display: flex; flex-direction: column; align-items: center;">
-      <p style="color: white; font-size: 14px; margin-bottom: 5px;">Acesso Administrativo:</p>
-      <input type="text" id="username" placeholder="Usuário Admin" autocapitalize="none" style="padding: 10px; margin-bottom: 5px;">
-      <button id="btn-login" style="background-color: #333; color: white; padding: 10px; width: 50%;">Entrar no Painel</button>
+    <div style="width: 100%; max-width: 400px; border-top: 1px solid rgba(255,255,255,0.5); padding-top: 15px; display: flex; flex-direction: column; align-items: center;">
+      <p style="color: white; font-size: 14px; margin-bottom: 5px; text-align: center;">Acesso Administrativo (Vincular Aparelho):</p>
+      <input type="text" id="admin-username" placeholder="Nome do Admin" autocapitalize="none" style="padding: 10px; margin-bottom: 5px;">
+      <input type="password" id="admin-password" placeholder="Senha" style="padding: 10px; margin-bottom: 5px;">
+      <button id="btn-login-admin" style="background-color: #333; color: white; padding: 10px; width: 50%;">Acessar Painel</button>
     </div>
   </div>
 
   <div id="admin-screen" class="screen" style="overflow-y: auto; justify-content: flex-start; padding-top: 40px;">
     <h1>Painel do Administrador</h1>
     
-    <div class="admin-section">
+    <div class="admin-section" id="sec-import" style="display: none;">
       <h3>Importar Palavras (.TXT)</h3>
-      <select id="admin-category-select" style="width: 90%;">
-        </select>
+      <select id="admin-category-select" style="width: 90%;"></select>
       <input type="file" id="word-file" accept=".txt" style="background: white; padding: 10px; width: 90%;">
       <button id="btn-import-words">Salvar no Banco</button>
     </div>
 
-    <div class="admin-section">
-      <h3>Gerenciar Usuários</h3>
-      <input type="text" id="new-user" placeholder="Novo usuário para cadastrar" style="width: 90%;">
-      <button id="btn-add-user">Cadastrar Usuário</button>
-      <button id="btn-reset-rank" class="btn-logout">Zerar Todo o Ranking</button>
+    <div class="admin-section" id="sec-promote" style="display: none;">
+      <h3>Criar Novo Admin (Nova Família)</h3>
+      <input type="text" id="promote-user" placeholder="Nome do Admin (ex: familia_joao)" style="width: 90%;">
+      <input type="text" id="promote-pass" placeholder="Senha provisória" style="width: 90%;">
+      <button id="btn-promote-user" style="background-color: #ffb74d;">Cadastrar Admin</button>
+    </div>
+
+    <div class="admin-section" id="sec-manage">
+      <h3>Gerenciar MEU Grupo</h3>
+      <input type="text" id="new-user" placeholder="Nome do Jogador" style="width: 90%;">
+      <button id="btn-add-user">Cadastrar na minha família</button>
+      <button id="btn-reset-rank" class="btn-logout">Zerar Ranking da minha família</button>
     </div>
 
     <button id="btn-admin-voltar" style="margin-top: 20px;">Ir para o Jogo</button>
@@ -102,8 +112,7 @@
       <button id="btn-logout-home" class="btn-logout">Trocar Usuário</button>
     </div>
 
-    <div class="grid" id="category-grid">
-      </div>
+    <div class="grid" id="category-grid"></div>
   </div>
 
   <div id="game-screen" class="screen">
@@ -117,7 +126,7 @@
     <div class="table-container">
       <table id="ranking-table">
         <tr><th>Usuário</th><th>Pontuação Total</th></tr>
-        </table>
+      </table>
     </div>
     <button id="btn-voltar-home" style="margin-bottom: 0;">Voltar ao Início</button>
     <button id="btn-logout-rank" class="btn-logout" style="margin-top: 10px;">Trocar de Usuário</button>
@@ -142,6 +151,7 @@
     const db = getDatabase(app);
 
     let currentUser = "";
+    let currentGroup = localStorage.getItem("gameGroup") || ""; 
     let currentScore = 0;
     let gameTime = 60;   
     let timeLeft = 60;   
@@ -177,31 +187,44 @@
       document.getElementById(screenId).classList.add('active');
     }
 
+    // ==========================================
+    // CARREGAMENTO DE JOGADORES DO GRUPO (SEM SENHA)
+    // ==========================================
     async function loadUsersForLogin() {
-      const usersRef = ref(db, 'users');
-      const snapshot = await get(usersRef);
       const userList = document.getElementById('user-list');
+      const btnLeave = document.getElementById('btn-leave-group');
       userList.innerHTML = '';
+
+      if (!currentGroup) {
+        userList.innerHTML = '<p style="color: white; font-size: 14px; text-align: center; margin-bottom: 10px;">Aparelho não vinculado a nenhuma família.<br>Administrador: Faça login abaixo para iniciar.</p>';
+        btnLeave.style.display = 'none';
+        return;
+      }
+
+      btnLeave.style.display = 'block';
+      
+      // Busca jogadores ESPECÍFICOS deste grupo
+      const playersRef = ref(db, `jogadores_do_jogo/${currentGroup}`);
+      const snapshot = await get(playersRef);
       
       if (snapshot.exists()) {
         snapshot.forEach(child => {
-          const userName = child.key;
+          const playerName = child.key;
           
-          if (userName !== "au.costa" && userName !== "au_costa") {
-            const btn = document.createElement('button');
-            btn.innerText = userName;
-            btn.className = "btn-user"; 
-            
-            btn.onclick = () => {
-              currentUser = userName;
-              renderCategories();
-              showScreen('home-screen');
-            };
-            userList.appendChild(btn);
-          }
+          const btn = document.createElement('button');
+          btn.innerText = playerName;
+          btn.className = "btn-user"; 
+          
+          // Entra direto sem senha!
+          btn.onclick = () => {
+            currentUser = playerName;
+            renderCategories();
+            showScreen('home-screen');
+          };
+          userList.appendChild(btn);
         });
       } else {
-        userList.innerHTML = '<p style="color: white; font-size: 14px;">Nenhum usuário cadastrado.</p>';
+        userList.innerHTML = '<p style="color: white; font-size: 14px;">Nenhum jogador cadastrado nesta família.</p>';
       }
     }
 
@@ -209,71 +232,140 @@
 
     function fazerLogout() {
       currentUser = "";
-      document.getElementById('username').value = ""; 
+      document.getElementById('admin-username').value = ""; 
+      document.getElementById('admin-password').value = ""; 
       loadUsersForLogin(); 
       showScreen('login-screen');
     }
+
+    document.getElementById('btn-leave-group').addEventListener('click', () => {
+      localStorage.removeItem('gameGroup');
+      currentGroup = "";
+      loadUsersForLogin();
+    });
 
     document.getElementById('btn-logout-home').addEventListener('click', fazerLogout);
     document.getElementById('btn-logout-rank').addEventListener('click', fazerLogout);
     document.getElementById('btn-logout-admin').addEventListener('click', fazerLogout);
 
-    document.getElementById('btn-login').addEventListener('click', () => {
-      const user = document.getElementById('username').value.trim();
-      if (!user) return alert("Digite o usuário administrador!");
+    // ==========================================
+    // LOGIN DO ADMINISTRADOR (COM SENHA)
+    // ==========================================
+    document.getElementById('btn-login-admin').addEventListener('click', async () => {
+      const adminName = document.getElementById('admin-username').value.trim();
+      const adminPass = document.getElementById('admin-password').value.trim();
 
-      if (user === "au.costa" || user === "au_costa") {
-        currentUser = user;
+      if (!adminName || !adminPass) return alert("Preencha o Nome e a Senha de Administrador!");
+
+      // 1. CHECAGEM DO SUPER ADMIN (Você)
+      if (adminName === "au.costa" || adminName === "au_costa") {
+        if (adminPass === "80605276") { // <--- SUA SENHA MESTRE AQUI
+          currentGroup = "au_costa"; 
+          localStorage.setItem('gameGroup', currentGroup);
+          
+          document.getElementById('sec-import').style.display = 'flex';
+          document.getElementById('sec-promote').style.display = 'flex';
+          showScreen('admin-screen');
+          
+          document.getElementById('admin-username').value = "";
+          document.getElementById('admin-password').value = "";
+          return;
+        } else {
+          return alert("Senha mestre incorreta!");
+        }
+      }
+
+      // 2. CHECAGEM DE ADMINS DE GRUPO (Seus amigos/clientes)
+      const adminRef = ref(db, `admins_do_jogo/${adminName}`);
+      const snapshot = await get(adminRef);
+      
+      if (snapshot.exists() && snapshot.val().password === adminPass) {
+        currentGroup = adminName;
+        localStorage.setItem('gameGroup', currentGroup);
+        
+        // Esconde opções de Super Admin
+        document.getElementById('sec-import').style.display = 'none';
+        document.getElementById('sec-promote').style.display = 'none';
+        
         showScreen('admin-screen');
+        document.getElementById('admin-username').value = "";
+        document.getElementById('admin-password').value = "";
       } else {
-        alert("Acesso restrito. Jogadores devem clicar em seus nomes na lista acima!");
-        document.getElementById('username').value = "";
+        alert("Administrador não encontrado ou Senha incorreta!");
       }
     });
 
-    // Funções Admin
+    // ==========================================
+    // FUNÇÕES ADMIN (Isoladas por Grupo)
+    // ==========================================
     document.getElementById('btn-admin-voltar').addEventListener('click', () => {
       renderCategories();
       showScreen('home-screen');
     });
 
-    document.getElementById('btn-add-user').addEventListener('click', () => {
-      const newUser = document.getElementById('new-user').value.trim();
-      
-      if (newUser === "au.costa" || newUser === "au_costa") {
-        return alert("Este nome de usuário é reservado para o sistema.");
-      }
+    // SUPER ADMIN: Criar Novo Admin (Nova Família)
+    document.getElementById('btn-promote-user').addEventListener('click', async () => {
+      const targetAdmin = document.getElementById('promote-user').value.trim();
+      const targetPass = document.getElementById('promote-pass').value.trim();
 
-      if (newUser) {
-        set(ref(db, `users/${newUser}`), { score: 0 });
-        alert(`Usuário ${newUser} cadastrado com sucesso!`);
+      if (!targetAdmin || !targetPass) return alert("Preencha o nome e a senha do novo admin!");
+      if (targetAdmin === "au.costa" || targetAdmin === "au_costa") return alert("Nome reservado!");
+      
+      const adminRef = ref(db, `admins_do_jogo/${targetAdmin}`);
+      const snap = await get(adminRef);
+      
+      if (snap.exists()) {
+        alert("Já existe um administrador (família) com este nome!");
+      } else {
+        await set(adminRef, { password: targetPass });
+        alert(`Sucesso! O Grupo/Admin "${targetAdmin}" foi criado com a senha "${targetPass}". Ele já pode logar.`);
+        document.getElementById('promote-user').value = '';
+        document.getElementById('promote-pass').value = '';
+      }
+    });
+
+    // QUALQUER ADMIN: Adicionar jogador à sua família
+    document.getElementById('btn-add-user').addEventListener('click', async () => {
+      const newPlayer = document.getElementById('new-user').value.trim();
+      if (!newPlayer) return;
+
+      const playerRef = ref(db, `jogadores_do_jogo/${currentGroup}/${newPlayer}`);
+      const snap = await get(playerRef);
+
+      if (snap.exists()) {
+        alert("Atenção: Esse nome JÁ EXISTE no seu grupo! Escolha outro nome (ex: João_Filho).");
+      } else {
+        await set(playerRef, { score: 0 });
+        alert(`Jogador "${newPlayer}" adicionado com sucesso ao seu grupo!`);
         document.getElementById('new-user').value = '';
         loadUsersForLogin(); 
       }
     });
 
+    // QUALQUER ADMIN: Zerar ranking do seu grupo
     document.getElementById('btn-reset-rank').addEventListener('click', async () => {
-      if(confirm("Tem certeza que deseja zerar o ranking de todos?")) {
-        const usersRef = ref(db, 'users');
-        const snapshot = await get(usersRef);
+      if(confirm("Zerar a pontuação de TODOS do seu grupo?")) {
+        const groupRef = ref(db, `jogadores_do_jogo/${currentGroup}`);
+        const snapshot = await get(groupRef);
+        
         if (snapshot.exists()) {
           const updates = {};
           snapshot.forEach(child => {
-            updates[`users/${child.key}/score`] = 0;
+            updates[`jogadores_do_jogo/${currentGroup}/${child.key}/score`] = 0;
           });
-          update(ref(db), updates);
-          alert("Ranking zerado!");
+          await update(ref(db), updates);
+          alert("Ranking do grupo zerado!");
         }
       }
     });
 
-    // Importação do TXT
+    // SUPER ADMIN: Importar Palavras
     document.getElementById('btn-import-words').addEventListener('click', () => {
       const fileInput = document.getElementById('word-file');
       const catId = document.getElementById('admin-category-select').value;
       const catNome = document.getElementById('admin-category-select').options[document.getElementById('admin-category-select').selectedIndex].text;
 
-      if (!fileInput.files.length) return alert("Por favor, selecione um arquivo .txt");
+      if (!fileInput.files.length) return alert("Selecione um arquivo .txt");
       
       const reader = new FileReader();
       reader.onload = async (e) => {
@@ -282,8 +374,8 @@
         const cleanWords = rawWords.map(w => w.trim()).filter(w => w.length > 0);
         
         if (cleanWords.length > 0) {
-           await set(ref(db, `words/${catId}`), cleanWords);
-           alert(`Sucesso! ${cleanWords.length} palavras salvas em "${catNome}".`);
+           await set(ref(db, `words_do_jogo/${catId}`), cleanWords);
+           alert(`Sucesso! ${cleanWords.length} palavras importadas em "${catNome}".`);
            fileInput.value = ""; 
         } else {
            alert("Arquivo vazio ou inválido.");
@@ -292,7 +384,9 @@
       reader.readAsText(fileInput.files[0]);
     });
 
-    // Renderizar Home
+    // ==========================================
+    // LÓGICA DO JOGO
+    // ==========================================
     function renderCategories() {
       const grid = document.getElementById('category-grid');
       grid.innerHTML = '';
@@ -305,21 +399,20 @@
       });
     }
 
-    // Iniciar Jogo
     async function startGame(catId) {
       gameTime = parseInt(document.getElementById('time-select').value);
       currentScore = 0;
       showScreen('game-screen');
       document.getElementById('word-display').innerText = "CARREGANDO...";
       
-      const wordsRef = ref(db, `words/${catId}`);
+      const wordsRef = ref(db, `words_do_jogo/${catId}`);
       const snapshot = await get(wordsRef);
       
       if (snapshot.exists() && snapshot.val().length > 0) {
         words = snapshot.val();
         words = words.sort(() => Math.random() - 0.5); 
       } else {
-        alert("Nenhuma palavra importada para esta categoria. Peça ao admin para subir o TXT!");
+        alert("Nenhuma palavra nesta categoria!");
         showScreen('home-screen');
         return;
       }
@@ -356,41 +449,25 @@
 
     function nextWord() {
       if (words.length === 0) {
-        document.getElementById('word-display').innerText = "FIM DA LISTA!";
+        document.getElementById('word-display').innerText = "FIM!";
         setTimeout(endGame, 2000);
         return;
       }
       document.getElementById('word-display').innerText = words.pop();
     }
 
-    // Lógica de Movimento Invertida e Calibrada
     function handleMotion(event) {
       if (!isPlaying || sensorLocked) return;
-
       const z = event.accelerationIncludingGravity?.z;
-      
       if (z === null || z === undefined) return;
-
-      // Invertido: Tela para CIMA (z > 5) acerta, Tela para BAIXO (z < -5) pula
-      if (z > 5) {
-        handleAction(true);  
-      } else if (z < -5) {
-        handleAction(false); 
-      }
+      if (z > 5) handleAction(true);  
+      else if (z < -5) handleAction(false); 
     }
 
-    // Toque na Tela
     document.getElementById('game-screen').addEventListener('click', (e) => {
       if (!isPlaying || sensorLocked) return;
-      
-      const screenWidth = window.innerWidth;
-      const clickX = e.clientX;
-      
-      if (clickX > screenWidth / 2) {
-        handleAction(true); 
-      } else {
-        handleAction(false); 
-      }
+      if (e.clientX > window.innerWidth / 2) handleAction(true); 
+      else handleAction(false); 
     });
 
     function handleAction(acertou) {
@@ -400,7 +477,6 @@
       if (acertou) {
         currentScore++;
         gameScreen.style.backgroundColor = "#4CAF50"; 
-        
         timeLeft = gameTime; 
         document.getElementById('timer-display').innerText = formatTime(timeLeft);
       } else {
@@ -419,21 +495,23 @@
       clearInterval(timerInterval);
       window.removeEventListener('devicemotion', handleMotion);
 
-      if (currentUser !== "au.costa" && currentUser !== "au_costa") {
-        const userRef = ref(db, `users/${currentUser}`);
-        const snapshot = await get(userRef);
-        let totalScore = currentScore;
-        if (snapshot.exists()) {
-          totalScore += snapshot.val().score || 0;
-        }
-        await update(ref(db, `users/${currentUser}`), { score: totalScore });
+      // Salva a pontuação exatamente na gaveta da Família/Grupo
+      const playerRef = ref(db, `jogadores_do_jogo/${currentGroup}/${currentUser}`);
+      const snapshot = await get(playerRef);
+      
+      let totalScore = currentScore;
+      if (snapshot.exists() && snapshot.val().score) {
+        totalScore += snapshot.val().score;
       }
+      await update(playerRef, { score: totalScore });
 
       loadRanking();
       showScreen('ranking-screen');
     }
 
-    // Eventos do Ranking
+    // ==========================================
+    // RANKING (Apenas a Família Atual)
+    // ==========================================
     document.getElementById('btn-ver-ranking').addEventListener('click', () => {
       loadRanking();
       showScreen('ranking-screen');
@@ -444,17 +522,18 @@
     });
 
     function loadRanking() {
-      const rankingRef = ref(db, 'users');
-      onValue(rankingRef, (snapshot) => {
+      // Puxa o ranking apenas de jogadores_do_jogo/NOME_DA_FAMILIA
+      const groupRef = ref(db, `jogadores_do_jogo/${currentGroup}`);
+      onValue(groupRef, (snapshot) => {
         const table = document.getElementById('ranking-table');
-        table.innerHTML = '<tr><th>Usuário</th><th>Pontuação Total</th></tr>';
+        table.innerHTML = '<tr><th>Jogador</th><th>Pontuação</th></tr>';
         
         let usersArray = [];
-        snapshot.forEach(child => {
-          if (child.key !== "au.costa" && child.key !== "au_costa") {
-            usersArray.push({ nome: child.key, score: child.val().score || 0 });
-          }
-        });
+        if (snapshot.exists()) {
+            snapshot.forEach(child => {
+              usersArray.push({ nome: child.key, score: child.val().score || 0 });
+            });
+        }
 
         usersArray.sort((a, b) => b.score - a.score);
 
