@@ -166,6 +166,7 @@
     let words = [];
     let isPlaying = false;
     let sensorLocked = false;
+    let wakeLock = null; // Variável para o controle da tela
 
     const categorias = [
       { id: "profissao", nome: "Profissão", img: "https://cdn-icons-png.flaticon.com/512/3281/3281223.png" },
@@ -193,6 +194,36 @@
       document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
       document.getElementById(screenId).classList.add('active');
     }
+
+    // ==========================================
+    // CONTROLE DE TELA LIGADA (WAKE LOCK)
+    // ==========================================
+    async function requestWakeLock() {
+      if ('wakeLock' in navigator) {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+          console.log('Tela mantida ligada!');
+        } catch (err) {
+          console.log(`Erro WakeLock: ${err.name}, ${err.message}`);
+        }
+      }
+    }
+
+    function releaseWakeLock() {
+      if (wakeLock !== null) {
+        wakeLock.release().then(() => {
+          wakeLock = null;
+          console.log('Tela liberada!');
+        });
+      }
+    }
+
+    // Recupera o WakeLock caso o usuário minimize o app e volte
+    document.addEventListener('visibilitychange', () => {
+      if (wakeLock !== null && document.visibilityState === 'visible' && isPlaying) {
+        requestWakeLock();
+      }
+    });
 
     // ==========================================
     // CARREGAMENTO DE JOGADORES DO GRUPO
@@ -370,7 +401,6 @@
       const file = fileInput.files[0];
       const fileName = file.name.toLowerCase();
 
-      // Se for arquivo Excel (.xlsx) ou (.csv)
       if (fileName.endsWith('.xlsx') || fileName.endsWith('.csv')) {
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -382,10 +412,9 @@
           if (json.length === 0) return alert("Arquivo vazio!");
 
           let cleanWords = [];
-          const headers = json[0]; // Linha 1: Os cabeçalhos das categorias (Ex: Animal, Comida...)
+          const headers = json[0];
 
           if (catId === 'diversos') {
-            // Lógica de "Diversos": Mapeia a Palavra com sua Referência do cabeçalho
             for (let i = 1; i < json.length; i++) {
               for (let j = 0; j < headers.length; j++) {
                 const word = json[i][j];
@@ -398,7 +427,6 @@
               }
             }
           } else {
-            // Se for arquivo Excel para outra categoria, pega apenas as palavras (sem referência)
             for (let i = 0; i < json.length; i++) {
               for (let j = 0; j < json[i].length; j++) {
                 const word = json[i][j];
@@ -420,7 +448,6 @@
         reader.readAsArrayBuffer(file);
 
       } else {
-        // Lógica tradicional caso ele suba um .TXT normal
         const reader = new FileReader();
         reader.onload = async (e) => {
           const text = e.target.result;
@@ -474,6 +501,7 @@
       }
       
       isPlaying = true;
+      requestWakeLock(); // Mantém a tela ligada ao iniciar o jogo
       nextWord();
       
       timeLeft = gameTime;
@@ -503,7 +531,6 @@
       return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
     }
 
-    // Função nextWord Atualizada para mostrar a dica!
     function nextWord() {
       if (words.length === 0) {
         document.getElementById('word-display').innerText = "FIM!";
@@ -514,13 +541,11 @@
 
       const item = words.pop();
       
-      // Se for a categoria DIVERSOS (que salva como Objeto com ref)
       if (typeof item === 'object' && item.word) {
         document.getElementById('word-display').innerText = item.word;
         document.getElementById('word-ref').innerText = item.ref ? `(${item.ref})` : '';
         document.getElementById('word-ref').style.display = 'block';
       } 
-      // Se for TXT comum ou outra categoria
       else {
         document.getElementById('word-display').innerText = item;
         document.getElementById('word-ref').style.display = 'none';
@@ -563,6 +588,7 @@
 
     async function endGame() {
       isPlaying = false;
+      releaseWakeLock(); // Libera a tela para poupar bateria
       clearInterval(timerInterval);
       window.removeEventListener('devicemotion', handleMotion);
 
